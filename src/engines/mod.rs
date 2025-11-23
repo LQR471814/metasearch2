@@ -14,7 +14,6 @@ use maud::PreEscaped;
 use serde::{Deserialize, Deserializer, Serialize};
 use tokio::sync::mpsc;
 use tracing::{error, info};
-use wreq::header::HeaderMap;
 use wreq_util::Emulation;
 
 mod macros;
@@ -643,15 +642,8 @@ pub async fn autocomplete(config: &Config, query: &str) -> eyre::Result<Vec<Stri
 pub static CLIENT: LazyLock<wreq::Client> = LazyLock::new(|| {
     wreq::ClientBuilder::new()
         .local_address(IpAddr::from_str("0.0.0.0").unwrap())
-        .emulation(Emulation::Firefox139)
         // we pretend to be a normal browser so websites don't block us
-        // (since we're not entirely a bot, we're acting on behalf of the user)
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0")
-        .default_headers({
-            let mut headers = HeaderMap::new();
-            headers.insert("Accept-Language", "en-US,en;q=0.5".parse().unwrap());
-            headers
-        })
+        .emulation(Emulation::Firefox139)
         .timeout(Duration::from_secs(10))
         .build()
         .unwrap()
