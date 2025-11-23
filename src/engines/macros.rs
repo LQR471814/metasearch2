@@ -47,7 +47,6 @@ macro_rules! engine_parse_response {
 macro_rules! engine_requests {
     ($($engine:ident => $module:ident::$engine_id:ident::$request:ident, $parse_response:ident),* $(,)?) => {
         impl Engine {
-            #[must_use]
             pub async fn request(&self, query: &SearchQuery) -> eyre::Result<RequestResponse> {
                 #[allow(clippy::useless_conversion)]
                 match self {

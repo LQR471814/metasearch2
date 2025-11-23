@@ -160,12 +160,12 @@ impl Display for SearchTab {
 
 pub enum RequestResponse {
     None,
-    Http(wreq::RequestBuilder),
-    Instant(EngineResponse),
+    Http(Box<wreq::RequestBuilder>),
+    Instant(Box<EngineResponse>),
 }
 impl From<wreq::RequestBuilder> for RequestResponse {
     fn from(req: wreq::RequestBuilder) -> Self {
-        Self::Http(req)
+        Self::Http(Box::new(req))
     }
 }
 
@@ -175,12 +175,12 @@ trait IntoRequestResponseResult {
 
 impl IntoRequestResponseResult for wreq::RequestBuilder {
     fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
-        Ok(RequestResponse::Http(self))
+        Ok(RequestResponse::Http(Box::new(self)))
     }
 }
 impl IntoRequestResponseResult for EngineResponse {
     fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
-        Ok(RequestResponse::Instant(self))
+        Ok(RequestResponse::Instant(Box::new(self)))
     }
 }
 impl IntoRequestResponseResult for RequestResponse {
@@ -382,7 +382,7 @@ async fn make_requests(
             let response = match request_response {
                 RequestResponse::Http(request) => {
                     let http_response =
-                        match make_request(request, engine, query, send_engine_progress_update)
+                        match make_request(*request, engine, query, send_engine_progress_update)
                             .await
                         {
                             Ok(http_response) => http_response,
@@ -411,7 +411,7 @@ async fn make_requests(
 
                     response
                 }
-                RequestResponse::Instant(response) => response,
+                RequestResponse::Instant(response) => *response,
                 RequestResponse::None => EngineResponse::new(),
             };
 
@@ -522,7 +522,7 @@ async fn make_image_requests(
             let response = match request_response {
                 RequestResponse::Http(request) => {
                     let http_response =
-                        make_request(request, engine, query, send_engine_progress_update).await?;
+                        make_request(*request, engine, query, send_engine_progress_update).await?;
 
                     let response = match engine.parse_images_response(&http_response) {
                         Ok(response) => response,
