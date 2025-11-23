@@ -5,7 +5,7 @@ use crate::{
     parse::{parse_html_response_with_opts, ParseOpts},
 };
 
-pub fn request(query: &str) -> RequestResponse {
+pub async fn request(query: &str) -> RequestResponse {
     // brave search doesn't support exact matching anymore, so disable it to not
     // pollute the results
     if query.chars().any(|c| c == '"') {

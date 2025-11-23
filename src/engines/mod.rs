@@ -11,7 +11,7 @@ use std::{
 use eyre::bail;
 use futures::future::join_all;
 use maud::PreEscaped;
-use reqwest::{header::HeaderMap, RequestBuilder};
+use reqwest::header::HeaderMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use tokio::sync::mpsc;
 use tracing::{error, info};
@@ -167,9 +167,29 @@ impl From<reqwest::RequestBuilder> for RequestResponse {
         Self::Http(req)
     }
 }
-impl From<EngineResponse> for RequestResponse {
-    fn from(res: EngineResponse) -> Self {
-        Self::Instant(res)
+
+trait IntoRequestResponseResult {
+    fn into_request_response_result(self) -> eyre::Result<RequestResponse>;
+}
+
+impl IntoRequestResponseResult for reqwest::RequestBuilder {
+    fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
+        Ok(RequestResponse::Http(self))
+    }
+}
+impl IntoRequestResponseResult for EngineResponse {
+    fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
+        Ok(RequestResponse::Instant(self))
+    }
+}
+impl IntoRequestResponseResult for RequestResponse {
+    fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
+        Ok(self)
+    }
+}
+impl IntoRequestResponseResult for eyre::Result<RequestResponse> {
+    fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
+        self
     }
 }
 
@@ -308,7 +328,7 @@ impl ProgressUpdate {
 }
 
 async fn make_request(
-    request: RequestBuilder,
+    request: reqwest::RequestBuilder,
     engine: Engine,
     query: &SearchQuery,
     send_engine_progress_update: impl Fn(Engine, EngineProgressUpdate),
@@ -349,7 +369,14 @@ async fn make_requests(
         }
 
         requests.push(async move {
-            let request_response = engine.request(query);
+            let request_response = match engine.request(query).await {
+                Ok(r) => r,
+                Err(e) => {
+                    error!("request error for {engine}: {e}");
+                    send_engine_progress_update(engine, EngineProgressUpdate::Error(e.to_string()));
+                    return Err(e);
+                }
+            };
 
             let response = match request_response {
                 RequestResponse::Http(request) => {
@@ -421,7 +448,7 @@ async fn make_requests(
                 continue;
             }
 
-            if let Some(request) = engine.postsearch_request(&response) {
+            if let Some(request) = engine.postsearch_request(&response).await {
                 postsearch_requests.push(async move {
                     let response = match request.send().await {
                         Ok(mut res) => {
@@ -617,7 +644,7 @@ pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         .local_address(IpAddr::from_str("0.0.0.0").unwrap())
         // we pretend to be a normal browser so websites don't block us
         // (since we're not entirely a bot, we're acting on behalf of the user)
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0")
+        .user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0")
         .default_headers({
             let mut headers = HeaderMap::new();
             headers.insert("Accept-Language", "en-US,en;q=0.5".parse().unwrap());

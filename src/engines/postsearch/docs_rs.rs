@@ -3,7 +3,7 @@ use scraper::{Html, Selector};
 
 use crate::engines::{HttpResponse, Response, CLIENT};
 
-pub fn request(response: &Response) -> Option<reqwest::RequestBuilder> {
+pub async fn request(response: &Response) -> Option<reqwest::RequestBuilder> {
     for search_result in response.search_results.iter().take(8) {
         if search_result.result.url.starts_with("https://docs.rs/") {
             return Some(CLIENT.get(search_result.result.url.as_str()));

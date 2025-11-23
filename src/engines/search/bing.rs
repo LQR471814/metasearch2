@@ -9,7 +9,7 @@ use crate::{
     parse::{parse_html_response_with_opts, ParseOpts, QueryMethod},
 };
 
-pub fn request(query: &str) -> reqwest::RequestBuilder {
+pub async fn request(query: &str) -> reqwest::RequestBuilder {
     CLIENT.get(
         Url::parse_with_params(
             "https://www.bing.com/search",

@@ -34,11 +34,13 @@ numbat = "1.16.0"
 parking_lot = "0.12.4"
 rand = "0.9.1"
 regex = "1.11.1"
+# cookies are required for google search
 reqwest = { version = "0.12.22", default-features = false, features = [
     "rustls-tls",
     "gzip",
     "deflate",
     "brotli",
+    "cookies",
 ] }
 scraper = "0.23.1"
 serde = { version = "1.0.219", features = ["derive"] }
