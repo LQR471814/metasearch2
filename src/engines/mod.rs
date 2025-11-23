@@ -11,10 +11,11 @@ use std::{
 use eyre::bail;
 use futures::future::join_all;
 use maud::PreEscaped;
-use reqwest::header::HeaderMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use tokio::sync::mpsc;
 use tracing::{error, info};
+use wreq::header::HeaderMap;
+use wreq_util::Emulation;
 
 mod macros;
 mod ranking;
@@ -159,11 +160,11 @@ impl Display for SearchTab {
 
 pub enum RequestResponse {
     None,
-    Http(reqwest::RequestBuilder),
+    Http(wreq::RequestBuilder),
     Instant(EngineResponse),
 }
-impl From<reqwest::RequestBuilder> for RequestResponse {
-    fn from(req: reqwest::RequestBuilder) -> Self {
+impl From<wreq::RequestBuilder> for RequestResponse {
+    fn from(req: wreq::RequestBuilder) -> Self {
         Self::Http(req)
     }
 }
@@ -172,7 +173,7 @@ trait IntoRequestResponseResult {
     fn into_request_response_result(self) -> eyre::Result<RequestResponse>;
 }
 
-impl IntoRequestResponseResult for reqwest::RequestBuilder {
+impl IntoRequestResponseResult for wreq::RequestBuilder {
     fn into_request_response_result(self) -> eyre::Result<RequestResponse> {
         Ok(RequestResponse::Http(self))
     }
@@ -194,11 +195,11 @@ impl IntoRequestResponseResult for eyre::Result<RequestResponse> {
 }
 
 pub enum RequestAutocompleteResponse {
-    Http(Box<reqwest::RequestBuilder>),
+    Http(Box<wreq::RequestBuilder>),
     Instant(Vec<String>),
 }
-impl From<reqwest::RequestBuilder> for RequestAutocompleteResponse {
-    fn from(req: reqwest::RequestBuilder) -> Self {
+impl From<wreq::RequestBuilder> for RequestAutocompleteResponse {
+    fn from(req: wreq::RequestBuilder) -> Self {
         Self::Http(Box::new(req))
     }
 }
@@ -209,7 +210,7 @@ impl From<Vec<String>> for RequestAutocompleteResponse {
 }
 
 pub struct HttpResponse {
-    pub res: reqwest::Response,
+    pub res: wreq::Response,
     pub body: String,
     pub config: Arc<Config>,
 }
@@ -220,7 +221,7 @@ impl<'a> From<&'a HttpResponse> for &'a str {
     }
 }
 
-impl From<HttpResponse> for reqwest::Response {
+impl From<HttpResponse> for wreq::Response {
     fn from(res: HttpResponse) -> Self {
         res.res
     }
@@ -328,7 +329,7 @@ impl ProgressUpdate {
 }
 
 async fn make_request(
-    request: reqwest::RequestBuilder,
+    request: wreq::RequestBuilder,
     engine: Engine,
     query: &SearchQuery,
     send_engine_progress_update: impl Fn(Engine, EngineProgressUpdate),
@@ -639,9 +640,10 @@ pub async fn autocomplete(config: &Config, query: &str) -> eyre::Result<Vec<Stri
     ))
 }
 
-pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    reqwest::ClientBuilder::new()
+pub static CLIENT: LazyLock<wreq::Client> = LazyLock::new(|| {
+    wreq::ClientBuilder::new()
         .local_address(IpAddr::from_str("0.0.0.0").unwrap())
+        .emulation(Emulation::Firefox139)
         // we pretend to be a normal browser so websites don't block us
         // (since we're not entirely a bot, we're acting on behalf of the user)
         .user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0")

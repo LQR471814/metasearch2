@@ -1,6 +1,6 @@
-use reqwest::Url;
 use serde::Deserialize;
 use tracing::error;
+use url::Url;
 
 use crate::{
     engines::{Engine, EngineResponse, RequestResponse, SearchQuery, CLIENT},

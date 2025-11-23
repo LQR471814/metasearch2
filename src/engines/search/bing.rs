@@ -9,7 +9,7 @@ use crate::{
     parse::{parse_html_response_with_opts, ParseOpts, QueryMethod},
 };
 
-pub async fn request(query: &str) -> reqwest::RequestBuilder {
+pub async fn request(query: &str) -> wreq::RequestBuilder {
     CLIENT.get(
         Url::parse_with_params(
             "https://www.bing.com/search",
@@ -66,7 +66,7 @@ pub fn parse_response(body: &str) -> eyre::Result<EngineResponse> {
     )
 }
 
-pub fn request_images(query: &str) -> reqwest::RequestBuilder {
+pub fn request_images(query: &str) -> wreq::RequestBuilder {
     CLIENT.get(
         Url::parse_with_params(
             "https://www.bing.com/images/async",

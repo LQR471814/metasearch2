@@ -1,5 +1,5 @@
-use reqwest::Url;
 use serde::Deserialize;
+use url::Url;
 
 use crate::engines::{EngineResponse, EngineSearchResult, RequestResponse, CLIENT};
 
