@@ -6,12 +6,6 @@ use crate::{
 };
 
 pub async fn request(query: &str) -> RequestResponse {
-    // brave search doesn't support exact matching anymore, so disable it to not
-    // pollute the results
-    if query.chars().any(|c| c == '"') {
-        return RequestResponse::None;
-    }
-
     CLIENT
         .get(Url::parse_with_params("https://search.brave.com/search", &[("q", query)]).unwrap())
         .into()
